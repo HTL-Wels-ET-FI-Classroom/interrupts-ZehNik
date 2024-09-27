@@ -78,12 +78,14 @@ int main(void)
 	int cntTimer2 = 0;
 
 	UserButton.Alternate = 0;
-	UserButton.Mode = GPIO_MODE_EVT_RISING;
+	UserButton.Mode = GPIO_MODE_IT_RISING;
 	UserButton.Pin = GPIO_PIN_0;
 	UserButton.Pull = GPIO_NOPULL;
 	UserButton.Speed = GPIO_SPEED_FAST;
 
 	HAL_GPIO_Init(GPIOA, &UserButton);
+
+	HAL_NVIC_EnableIRQ(IRQn)
 
 	/* Infinite loop */
 	while (1)
