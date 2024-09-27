@@ -22,6 +22,7 @@
 /* Private typedef -----------------------------------------------------------*/
 
 /* Private define ------------------------------------------------------------*/
+GPIO_InitTypeDef UserButton;
 
 /* Private variables ---------------------------------------------------------*/
 
@@ -70,26 +71,40 @@ int main(void)
 
 	LCD_SetFont(&Font8);
 	LCD_SetColors(LCD_COLOR_MAGENTA, LCD_COLOR_BLACK); // TextColor, BackColor
-	LCD_DisplayStringAtLineMode(39, "copyright xyz", CENTER_MODE);
+	LCD_DisplayStringAtLineMode(39, "zehn", CENTER_MODE);
 
-	int cnt = 0;
+	int timerSwitch = 0;
+	int cntTimer1 = 0;
+	int cntTimer2 = 0;
+
+	UserButton.Alternate = 0;
+	UserButton.Mode = GPIO_MODE_EVT_RISING;
+	UserButton.Pin = GPIO_PIN_0;
+	UserButton.Pull = GPIO_NOPULL;
+	UserButton.Speed = GPIO_SPEED_FAST;
+
+	HAL_GPIO_Init(GPIOA, &UserButton);
+
 	/* Infinite loop */
 	while (1)
 	{
 		//execute main loop every 100ms
 		HAL_Delay(100);
 
-		// display timer
-		cnt++;
 		LCD_SetFont(&Font20);
 		LCD_SetTextColor(LCD_COLOR_BLUE);
-		LCD_SetPrintPosition(5, 0);
-		printf("   Timer: %.1f", cnt/10.0);
 
-		// test touch interface
-		int x, y;
-		if (GetTouchState(&x, &y)) {
-			LCD_FillCircle(x, y, 5);
+		switch(timerSwitch){
+			case(0):
+				cntTimer1++;
+				LCD_SetPrintPosition(5, 0);
+				printf("   Timer: %.1f", cntTimer1/10.0);
+				break;
+			case(1):
+				cntTimer2++;
+				LCD_SetPrintPosition(7, 0);
+				printf("   Timer: %.1f", cntTimer2/10.0);
+				break;
 		}
 
 
