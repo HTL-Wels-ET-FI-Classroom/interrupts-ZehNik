@@ -23,19 +23,44 @@
 
 /* Private define ------------------------------------------------------------*/
 GPIO_InitTypeDef UserButton;
+GPIO_InitTypeDef ColourButton;
 
 /* Private variables ---------------------------------------------------------*/
+volatile static int timerSwitch = 0;
+volatile static int colourSwitch = 0;
+volatile static int cntTimer1 = 0;
+volatile static int cntTimer2 = 0;
+volatile static unsigned int debounceColourSwitch = 0;
 
 /* Private function prototypes -----------------------------------------------*/
-static int GetUserButtonPressed(void);
-static int GetTouchState (int *xCoord, int *yCoord);
+//static int GetUserButtonPressed(void);
+//static int GetTouchState (int *xCoord, int *yCoord);
+
+void EXTI0_IRQHandler(void){ // Interupt für den User Button
+	__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_0);
+	timerSwitch = !timerSwitch;
+}
+
+void EXTI3_IRQHandler(void){ // Interupt für den Colour Button
+	__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_3);
+	if((HAL_GetTick() - debounceColourSwitch) > 2000){
+		colourSwitch = !colourSwitch;
+		debounceColourSwitch = HAL_GetTick();
+	}
+
+}
 
 /**
  * @brief This function handles System tick timer.
  */
-void SysTick_Handler(void)
-{
+void SysTick_Handler(void){
 	HAL_IncTick();
+	if(timerSwitch == 0){
+		cntTimer1++;
+	}else if(timerSwitch == 1){
+		cntTimer2++;
+	}
+
 }
 
 /**
@@ -73,10 +98,8 @@ int main(void)
 	LCD_SetColors(LCD_COLOR_MAGENTA, LCD_COLOR_BLACK); // TextColor, BackColor
 	LCD_DisplayStringAtLineMode(39, "zehn", CENTER_MODE);
 
-	int timerSwitch = 0;
-	int cntTimer1 = 0;
-	int cntTimer2 = 0;
 
+	// User Button (timer switch)
 	UserButton.Alternate = 0;
 	UserButton.Mode = GPIO_MODE_IT_RISING;
 	UserButton.Pin = GPIO_PIN_0;
@@ -85,28 +108,47 @@ int main(void)
 
 	HAL_GPIO_Init(GPIOA, &UserButton);
 
-	HAL_NVIC_EnableIRQ(IRQn)
+	HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+
+	// timer colour switch
+	ColourButton.Alternate = 0;
+	ColourButton.Mode = GPIO_MODE_IT_RISING;
+	ColourButton.Pin = GPIO_PIN_3;
+	ColourButton.Pull = GPIO_NOPULL;
+	ColourButton.Speed = GPIO_SPEED_FAST;
+
+	HAL_GPIO_Init(GPIOG, &ColourButton);
+
+	HAL_NVIC_EnableIRQ(EXTI3_IRQn);
+
+
+
+	LCD_SetFont(&Font20);
+	LCD_SetTextColor(LCD_COLOR_BLUE);
+	LCD_SetPrintPosition(7, 0);
+	printf("   Timer: %.1f", cntTimer2/10.0);
+	LCD_SetPrintPosition(5, 0);
+	printf("   Timer: %.1f", cntTimer1/10.0);
 
 	/* Infinite loop */
 	while (1)
 	{
 		//execute main loop every 100ms
-		HAL_Delay(100);
 
 		LCD_SetFont(&Font20);
-		LCD_SetTextColor(LCD_COLOR_BLUE);
+		if(colourSwitch == 0){
+			LCD_SetTextColor(LCD_COLOR_BLUE);
+		}else if(colourSwitch == 1){
+			LCD_SetTextColor(LCD_COLOR_RED);
+		}
 
-		switch(timerSwitch){
-			case(0):
-				cntTimer1++;
-				LCD_SetPrintPosition(5, 0);
-				printf("   Timer: %.1f", cntTimer1/10.0);
-				break;
-			case(1):
-				cntTimer2++;
-				LCD_SetPrintPosition(7, 0);
-				printf("   Timer: %.1f", cntTimer2/10.0);
-				break;
+
+		if(timerSwitch == 0){
+			LCD_SetPrintPosition(5, 0);
+			printf("   Timer: %.1f ", cntTimer1/1000.0);
+		}else if(timerSwitch == 1){
+			LCD_SetPrintPosition(7, 0);
+			printf("   Timer: %.1f ", cntTimer2/1000.0);
 		}
 
 
@@ -118,9 +160,12 @@ int main(void)
  * @param none
  * @return 1 if user button input (PA0) is high
  */
+
+/*
 static int GetUserButtonPressed(void) {
 	return (GPIOA->IDR & 0x0001);
 }
+ */
 
 /**
  * Check if touch interface has been used
@@ -128,6 +173,8 @@ static int GetUserButtonPressed(void) {
  * @param yCoord y coordinate of touch event in pixels
  * @return 1 if touch event has been detected
  */
+
+/*
 static int GetTouchState (int* xCoord, int* yCoord) {
 	void    BSP_TS_GetState(TS_StateTypeDef *TsState);
 	TS_StateTypeDef TsState;
@@ -135,16 +182,16 @@ static int GetTouchState (int* xCoord, int* yCoord) {
 
 	TS_GetState(&TsState);
 	if (TsState.TouchDetected) {
-		*xCoord = TsState.X;
-		*yCoord = TsState.Y;
+ *xCoord = TsState.X;
+ *yCoord = TsState.Y;
 		touchclick = 1;
 		if (TS_IsCalibrationDone()) {
-			*xCoord = TS_Calibration_GetX(*xCoord);
-			*yCoord = TS_Calibration_GetY(*yCoord);
+ *xCoord = TS_Calibration_GetX(*xCoord);
+ *yCoord = TS_Calibration_GetY(*yCoord);
 		}
 	}
 
 	return touchclick;
 }
-
+ */
 
